@@ -21,7 +21,7 @@ func main() {
 	httpHandler := handlers.NewHTTPHandler(reg, httpTracker)
 
 	log.Printf("Initialized Connection Registry (active connections: %d)", reg.Count())
-	
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc(
@@ -36,8 +36,26 @@ func main() {
 		Handler: mux,
 	}
 
+	// http route wiring
 	mux.HandleFunc("/api/http/send", httpHandler.HandleSend)
 	mux.HandleFunc("/api/http/stats", httpHandler.HandleStats)
+
+	pollingTracker := metrics.NewProtocolTracker("polling")
+	pollingStore := handlers.NewMessageStore()
+	pollingHandler := handlers.NewPollingHandler(reg, pollingTracker, pollingStore)
+
+	longPollTracker := metrics.NewProtocolTracker("longpolling")
+	longPollStore := handlers.NewMessageStore()
+	longPollBroadcaster := handlers.NewLongPollBroadcaster()
+	longPollHandler := handlers.NewLongPollingHandler(reg, longPollTracker, longPollStore, longPollBroadcaster)
+
+	mux.HandleFunc("/api/longpolling/send", longPollHandler.HandleSend)
+	mux.HandleFunc("/api/longpolling/messages", longPollHandler.HandleGetMessages)
+	mux.HandleFunc("/api/longpolling/stats", longPollHandler.HandleStats)
+
+	mux.HandleFunc("/api/polling/send", pollingHandler.HandleSend)
+	mux.HandleFunc("/api/polling/messages", pollingHandler.HandleGetMessage)
+	mux.HandleFunc("/api/polling/stats", pollingHandler.HandleStats)
 
 	// Start the server in a goroutine
 	go func() {
