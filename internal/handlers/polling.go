@@ -170,3 +170,26 @@ func (h *PollingHandler) HandleGetMessage(w http.ResponseWriter, r *http.Request
 	})
 
 }
+
+func (h *PollingHandler) HandleStats(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	activeConnections := h.registry.Count()
+	clients := h.registry.List()
+	var totalMessages int64
+	for _, client := range clients {
+		if client.Protocol == "polling" {
+			totalMessages += client.MessageCount
+		}
+	}
+	metricsSnapshot := h.tracker.Snapshot(activeConnections, totalMessages)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(metricsSnapshot)
+
+}
+
+
