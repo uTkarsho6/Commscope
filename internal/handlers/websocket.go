@@ -66,7 +66,7 @@ func (h *WSHub) Run() {
 			h.mu.Unlock()
 
 		case message := <-h.broadcast:
-			h.mu.RLock()
+			h.mu.Lock() // // Full Write Lock because delete() mutates the map!
 
 			for client := range h.clients {
 				select {
@@ -77,7 +77,7 @@ func (h *WSHub) Run() {
 					delete(h.clients, client)
 				}
 			}
-			h.mu.RUnlock()
+			h.mu.Unlock()
 		}
 	}
 }
