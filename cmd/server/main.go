@@ -48,7 +48,6 @@ func main() {
 	mux.HandleFunc("/api/polling/messages", pollingHandler.HandleGetMessage)
 	mux.HandleFunc("/api/polling/stats", pollingHandler.HandleStats)
 
-
 	longPollTracker := metrics.NewProtocolTracker("longpolling")
 	longPollStore := handlers.NewMessageStore()
 	longPollBroadcaster := handlers.NewLongPollBroadcaster()
@@ -63,11 +62,22 @@ func main() {
 	sseBroadcaster := handlers.NewSSEBroadcaster()
 	sseHandler := handlers.NewSSEHandler(reg, sseTracker, sseStore, sseBroadcaster)
 
-
-    mux.HandleFunc("/api/sse/send", sseHandler.HandleSend)
+	mux.HandleFunc("/api/sse/send", sseHandler.HandleSend)
 	mux.HandleFunc("/api/sse/events", sseHandler.HandleEvents)
 	mux.HandleFunc("/api/sse/stats", sseHandler.HandleStats)
-	
+
+	wsTracker := metrics.NewProtocolTracker("ws")
+	wsHub := handlers.NewWSHub()
+	go wsHub.Run() // start central hub event loop
+
+	wsHandler := handlers.NewWSHandler(wsHub, reg , wsTracker)
+
+	mux.HandleFunc("/api/ws/connect", wsHandler.HandleConnect)
+	mux.HandleFunc("/api/ws/send", wsHandler.HandleSend)
+	mux.HandleFunc("/api/ws/stats", wsHandler.HandleStats)
+
+
+
 
 	// Start the server in a goroutine
 	go func() {
