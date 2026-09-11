@@ -3,6 +3,8 @@ package handlers
 import (
 	"commscope/internal/metrics"
 	"commscope/internal/registry"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -233,3 +235,66 @@ func (h *WSHandler) HandleConnect(w http.ResponseWriter, r *http.Request) {
 }
 
 // HandleSend allows broadcasting messages via HTTP POST across connected WebSocket clients.
+
+func (h *WSHandler) HandleSend(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	start := time.Now()
+	var msg struct {
+		ClientID string `json:"client_id"`
+		Text     string `json:"text"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
+		http.Error(w, "invalid json payload", http.StatusBadRequest)
+		return
+	}
+	if msg.Text == "" {
+		http.Error(w, "Text is Required", http.StatusBadRequest)
+		return
+	}
+
+	payload, _ := json.Marshal(map[string]string{
+		"id":         fmt.Sprintf("msg-%d", time.Now().UnixNano()),
+		"client_id":  msg.ClientID,
+		"text":       msg.Text,
+		"created_at": time.Now().Format(time.RFC3339Nano),
+	})
+
+	h.Hub.broadcast <- payload
+	duration := time.Since(start)
+	h.Tracker.Record(duration)
+	if msg.ClientID != "" {
+		h.Registry.RecordMessage(msg.ClientID)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status":"success"}`))
+
+}
+
+// HandleStats returns telemetry metrics for the WebSocket protocol.
+
+func(h *WSHandler) HandleStats(w http.ResponseWriter, r *http.Request){
+	h.Hub.mu.RLock()
+	activeCount := len(h.Hub.clients)
+	h.Hub.mu.RUnlock()
+
+	var totalMessages int64
+	for _, client := range h.Registry.List() {
+		if client.Protocol =="ws" {
+			totalMessages += client.MessageCount
+		}
+	}
+    
+	snapshot := h.Tracker.Snapshot(activeCount, totalMessages)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(snapshot)
+
+
+}
