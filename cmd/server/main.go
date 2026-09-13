@@ -1,16 +1,22 @@
 package main
 
 import (
+	grpcserver "commscope/internal/grpc"
 	"commscope/internal/handlers"
 	"commscope/internal/metrics"
 	"commscope/internal/registry"
+	"commscope/pkg/pb"
 	"context"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -70,14 +76,44 @@ func main() {
 	wsHub := handlers.NewWSHub()
 	go wsHub.Run() // start central hub event loop
 
-	wsHandler := handlers.NewWSHandler(wsHub, reg , wsTracker)
+	wsHandler := handlers.NewWSHandler(wsHub, reg, wsTracker)
 
 	mux.HandleFunc("/api/ws/connect", wsHandler.HandleConnect)
 	mux.HandleFunc("/api/ws/send", wsHandler.HandleSend)
 	mux.HandleFunc("/api/ws/stats", wsHandler.HandleStats)
 
+	// gRPC Server Setup:
 
+	//tcp listener on 50051 port
+	grpcListener, err := net.Listen("tcp", ":50051")
 
+	//check if listener creation failed
+	if err != nil {
+		log.Fatalf("failed to listen on: %v", err)
+
+	}
+
+	grpcTracker := metrics.NewProtocolTracker("grpc-unary")
+
+	// application lvl gRPC handler, application logic
+	grpcSrv := grpcserver.NewServer(reg, grpcTracker)
+
+	// actual server (gRPC framework)
+	gServer := grpc.NewServer()
+
+	pb.RegisterCommScopeServiceServer(gServer, grpcSrv) // connects your implementation to the gRPC framework.
+
+	reflection.Register(gServer) // adding for development purpose only in production dont use this, allow tools to automatically know about the service provided by gRPC
+
+	go func() {
+		log.Printf("Starting gRPC server on %s", grpcListener.Addr().String())
+		// The current goroutine is occupied waiting for/serving connections, so execution doesn't proceed past that function call.
+		// This line is effectively a blocking call that would prevent the rest of the main function from executing if it were in the main goroutine.
+		// However, since it is inside a goroutine, the main function can continue to execute concurrently.
+		if err := gServer.Serve(grpcListener); err != nil {
+			log.Fatalf("gRPC server error: %v", err)
+		}
+	}()
 
 	// Start the server in a goroutine
 	go func() {

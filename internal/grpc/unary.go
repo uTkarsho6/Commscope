@@ -13,7 +13,7 @@ import (
 // Server implements the CommScopeServiceServer gRPC interface.
 // service handler struct
 type Server struct {
-	pb.UnimplementedCommScopeServiceServer // embedding to inherit default empty implementation ( prevents compilation error)
+	pb.UnimplementedCommScopeServiceServer // embedding to inherit default empty implementation by protobuf ( prevents compilation error) maintain forward compatibility if any new rpc is added in future
 	Registry *registry.ConnectionRegistry
 	Tracker *metrics.ProtocolTracker
 }
@@ -28,9 +28,9 @@ func NewServer(reg *registry.ConnectionRegistry, tracker *metrics.ProtocolTracke
 
 // SendMessage handles Unary gRPC mesage sending.
 
-func(s *Server) SendMessages(ctx context.Context, req *pb.SendMessageRequest) (*pb.SendMessageResponse, error) {
+func(s *Server) SendMessage(ctx context.Context, req *pb.SendMessageRequest) (*pb.SendMessageResponse, error) {
 	start := time.Now()
-	
+
 	clientID := req.GetClientId()
 	if clientID == ""{
      clientID = "grpc-unary-client"
