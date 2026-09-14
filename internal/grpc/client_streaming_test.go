@@ -45,3 +45,4 @@ func TestClientStreamingGRPC_SendBatchMessages(t *testing.T) {
 		t.Errorf("Expected status 'success', got %s", resp.GetStatus())
 	}
 }
+
