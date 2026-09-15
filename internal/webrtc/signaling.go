@@ -111,7 +111,6 @@ func (h *WebRTCHandler) HandleOffer(w http.ResponseWriter, r *http.Request) {
 			log.Printf("DataChannel '%s'-'%d' open for peer %s\n", d.Label(), d.ID(), peerID)
 		})
 
-
 		//OnMessage sets an event handler which is invoked on a binary message arrival over the sctp transport from a remote peer.
 		d.OnMessage(func(msg webrtc.DataChannelMessage) {
 			start := time.Now()
@@ -119,7 +118,7 @@ func (h *WebRTCHandler) HandleOffer(w http.ResponseWriter, r *http.Request) {
 			duration := time.Since(start)
 			h.Tracker.Record(duration)
 
-			// Echo message back over P2P DataChannel, because: 
+			// Echo message back over P2P DataChannel, because:
 			_ = d.SendText(fmt.Sprintf("P2P Echo: %s", string(msg.Data)))
 		})
 	})
@@ -157,3 +156,32 @@ func (h *WebRTCHandler) HandleOffer(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// HandleStats returns JSON snapshot of WebRTC connections and metrics telemetry.
+
+func (h *WebRTCHandler) HandleStats(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	h.Sessions.mu.RLock()
+	activeConns := len(h.Sessions.connections)
+	h.Sessions.mu.RUnlock()
+
+	clients := h.Registry.List()
+	var totalMessages int64
+	for _, client := range clients {
+		if client.Protocol == "webrtc" {
+			totalMessages += client.MessageCount
+		}
+	}
+
+	snapshot := h.Tracker.Snapshot(activeConns, totalMessages)
+
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	_ = json.NewEncoder(w).Encode(snapshot)
+
+}

@@ -5,6 +5,7 @@ import (
 	"commscope/internal/handlers"
 	"commscope/internal/metrics"
 	"commscope/internal/registry"
+	webrtcserver  "commscope/internal/webrtc"
 	"commscope/pkg/pb"
 	"context"
 	"log"
@@ -81,6 +82,13 @@ func main() {
 	mux.HandleFunc("/api/ws/connect", wsHandler.HandleConnect)
 	mux.HandleFunc("/api/ws/send", wsHandler.HandleSend)
 	mux.HandleFunc("/api/ws/stats", wsHandler.HandleStats)
+
+	//WebRTC Signaling
+	webrtcTracker := metrics.NewProtocolTracker("webrtc")
+	webrtcHandler := webrtcserver.NewWebRTCHandler(reg, webrtcTracker)
+	mux.HandleFunc("/api/webrtc/offer", webrtcHandler.HandleOffer)
+	mux.HandleFunc("/api/webrtc/stats", webrtcHandler.HandleStats)
+
 
 	// gRPC Server Setup:
 
