@@ -34,6 +34,8 @@ func main() {
 	mux.HandleFunc(
 		"/health",
 		func(w http.ResponseWriter, r *http.Request) {
+			// allow front-end to fetch data using fetch() even if front-end origin is different from back-end origin (port numbers are different :3000 vs :8080). solving CORS
+			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("OK"))
 		})
