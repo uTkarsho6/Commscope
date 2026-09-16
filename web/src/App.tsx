@@ -1,122 +1,133 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+// 1. Import React Hooks for managing state (memory) and side-effects (fetching data)
+import { useState, useEffect } from 'react';
 
-function App() {
-  const [count, setCount] = useState(0)
+export function App() {
+  // 2. STATE 1: Controls which view mode is visible ('playground' or 'battle')
+  //    - activeTab: current value ('playground' by default)
+  //    - setActiveTab: function to update activeTab when user clicks a navigation button
+  const [activeTab, setActiveTab] = useState<'playground' | 'battle'>('playground');
+
+  // 3. STATE 2: Stores whether the Go Backend server (:8080) is responding
+  //    - serverOnline: boolean (true/false)
+  //    - setServerOnline: function to update serverOnline status
+  const [serverOnline, setServerOnline] = useState<boolean>(false);
+
+  // 4. SIDE EFFECT HOOK: Runs ONCE when this component first renders on screen ([] dependency array)
+  useEffect(() => {
+    // Make HTTP GET request to Go server health endpoint
+    fetch('http://localhost:8080/health')
+      .then((res) => setServerOnline(res.ok))  // If 200 OK -> serverOnline = true
+      .catch(() => setServerOnline(false));     // If network error -> serverOnline = false
+  }, []); // [] means "run only once on page load"
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
+    // 5. MAIN CONTAINER: Centered layout with maximum width of 1200px
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1.5rem' }}>
+
+      {/* 6. HEADER BAR: Top panel with title on left and controls on right */}
+      <header
+        className="workbench-panel" // Uses our custom CSS rule from theme.css
+        style={{
+          padding: '1rem 1.5rem',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        {/* Left Side: Branding Title & Subtitle */}
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
+          <h1 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: 'var(--color-text-primary)' }}>
+            CommScope
+          </h1>
+          <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', margin: 0 }}>
+            Interactive Real-Time Communication Playground
           </p>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
 
-      <div className="ticks"></div>
+        {/* Right Side: Health Status Indicator & Navigation Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+          {/* Health Status Indicator */}
+          <div style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {/* Dynamic Colored Dot: Green if online, Red if offline */}
+            <span
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: serverOnline ? 'var(--color-live)' : 'var(--color-error)',
+              }}
+            />
+            {/* Text showing ONLINE or OFFLINE dynamically */}
+            <span>
+              Go Server (:8080): <strong>{serverOnline ? 'ONLINE' : 'OFFLINE'}</strong>
+            </span>
+          </div>
+
+          {/* Mode Switcher Buttons */}
+          <div className="workbench-panel-subdued" style={{ padding: '0.25rem', display: 'flex', gap: '0.25rem' }}>
+
+            {/* Button 1: Switch to Playground */}
+            <button
+              onClick={() => setActiveTab('playground')}
+              style={{
+                padding: '0.35rem 0.85rem',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                borderRadius: '3px',
+                border: 'none',
+                cursor: 'pointer',
+                // Highlight button background blue if Playground is selected
+                backgroundColor: activeTab === 'playground' ? 'var(--color-primary)' : 'transparent',
+                color: activeTab === 'playground' ? '#ffffff' : 'var(--color-text-secondary)',
+              }}
+            >
+              Playground
+            </button>
+
+            {/* Button 2: Switch to Battle Mode */}
+            <button
+              onClick={() => setActiveTab('battle')}
+              style={{
+                padding: '0.35rem 0.85rem',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                borderRadius: '3px',
+                border: 'none',
+                cursor: 'pointer',
+                // Highlight button background blue if Battle Mode is selected
+                backgroundColor: activeTab === 'battle' ? 'var(--color-primary)' : 'transparent',
+                color: activeTab === 'battle' ? '#ffffff' : 'var(--color-text-secondary)',
+              }}
+            >
+              Battle Mode
+            </button>
+          </div>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      </header>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      {/* 7. MAIN VIEW AREA: Renders Playground OR Battle Mode dynamically */}
+      <main>
+        {/* Ternary Operator: Condition ? (Show If True) : (Show If False) */}
+        {activeTab === 'playground' ? (
+          <div className="workbench-panel" style={{ padding: '1.5rem' }}>
+            <h2 style={{ fontSize: '1rem', margin: 0 }}>Playground Mode</h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+              Select a protocol to inspect communication semantics, packet flow, and telemetry.
+            </p>
+          </div>
+        ) : (
+          <div className="workbench-panel" style={{ padding: '1.5rem' }}>
+            <h2 style={{ fontSize: '1rem', margin: 0 }}>Battle Mode</h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+              Compare two protocols side-by-side under identical workload.
+            </p>
+          </div>
+        )}
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;

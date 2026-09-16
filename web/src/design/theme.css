@@ -1,0 +1,47 @@
+:root {
+  --color-bg: #faf8ff;
+  --color-surface: #ffffff;
+  --color-surface-subdued: #f1f5f9;
+  --color-border: #e2e8f0;
+  
+  --color-primary: #2f5de3; /* Signal Blue */
+  --color-primary-light: #eff4fe;
+  
+  --color-live: #10b981;    /* Emerald Green */
+  --color-error: #ef4444;   /* Crimson Red */
+  --color-warning: #f59e0b; /* Amber */
+  
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
+
+  /* Precision Fonts */
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Precision Workbench Flat Panel Utility */
+.workbench-panel {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.workbench-panel-subdued {
+  background-color: var(--color-surface-subdued);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.font-mono-tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
