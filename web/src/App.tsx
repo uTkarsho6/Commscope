@@ -1,5 +1,8 @@
 // 1. Import React Hooks for managing state (memory) and side-effects (fetching data)
 import { useState, useEffect } from 'react';
+import type { ProtocolType } from './domain/types';
+import { ProtocolSelector } from './features/playground/components/ProtocolSelector';
+
 
 export function App() {
   // 2. STATE 1: Controls which view mode is visible ('playground' or 'battle')
@@ -11,6 +14,9 @@ export function App() {
   //    - serverOnline: boolean (true/false)
   //    - setServerOnline: function to update serverOnline status
   const [serverOnline, setServerOnline] = useState<boolean>(false);
+
+  const [selectedProtocol, setSelectedProtocol] = useState<ProtocolType>('http');
+
 
   // 4. SIDE EFFECT HOOK: Runs ONCE when this component first renders on screen ([] dependency array)
   useEffect(() => {
@@ -110,12 +116,20 @@ export function App() {
       {/* 7. MAIN VIEW AREA: Renders Playground OR Battle Mode dynamically */}
       <main>
         {/* Ternary Operator: Condition ? (Show If True) : (Show If False) */}
-        {activeTab === 'playground' ? (
-          <div className="workbench-panel" style={{ padding: '1.5rem' }}>
-            <h2 style={{ fontSize: '1rem', margin: 0 }}>Playground Mode</h2>
-            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-              Select a protocol to inspect communication semantics, packet flow, and telemetry.
-            </p>
+                {activeTab === 'playground' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Compact Protocol Selector Bar */}
+            <ProtocolSelector
+              selectedProtocol={selectedProtocol}
+              onSelectProtocol={setSelectedProtocol}
+            />
+
+            {/* Placeholder for upcoming Packet Visualizer Canvas & Metrics */}
+            <div className="workbench-panel" style={{ padding: '1.5rem' }}>
+              <h4 style={{ fontSize: '0.85rem', margin: 0 }}>
+                Selected Protocol Engine: <strong style={{ color: 'var(--color-primary)' }}>{selectedProtocol.toUpperCase()}</strong>
+              </h4>
+            </div>
           </div>
         ) : (
           <div className="workbench-panel" style={{ padding: '1.5rem' }}>
@@ -125,6 +139,7 @@ export function App() {
             </p>
           </div>
         )}
+
       </main>
     </div>
   );
