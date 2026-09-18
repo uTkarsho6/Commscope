@@ -7,7 +7,6 @@ interface VisualParticle {
   id: string;
   direction: 'outbound' | 'inbound';
   progress: number; // 0.0 (start) to 1.0 (end)
-  color: string;
 }
 
 interface PacketVisualizerProps {
@@ -17,7 +16,7 @@ interface PacketVisualizerProps {
 
 export function PacketVisualizer({ selectedProtocol, isServerOnline }: PacketVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [particles, setParticles] = useState<VisualParticle[]>([]);
+  const particlesRef = useRef<VisualParticle[]>([]);
   const [isWaiting, setIsWaiting] = useState<boolean>(false);
 
   // 1. Subscribe to EventBus & handle incoming CommunicationEvents
@@ -31,15 +30,12 @@ export function PacketVisualizer({ selectedProtocol, isServerOnline }: PacketVis
         setIsWaiting(false);
       }
 
-      // Add new particle to canvas animation queue
-      const particle: VisualParticle = {
+      // Push new particle into particleRef array directly (0 React re-renders!)
+      particlesRef.current.push({
         id: event.id,
         direction: event.direction === 'outbound' ? 'outbound' : 'inbound',
         progress: 0,
-        color: event.direction === 'outbound' ? 'var(--color-primary)' : 'var(--color-live)',
-      };
-
-      setParticles((prev) => [...prev, particle]);
+      });
     });
 
     // Cleanup listener on unmount to prevent memory leaks!
@@ -99,26 +95,24 @@ export function PacketVisualizer({ selectedProtocol, isServerOnline }: PacketVis
       ctx.font = '600 10px var(--font-sans)';
       ctx.fillText(selectedProtocol === 'webrtc' ? 'PEER B' : 'GO SRV', endX, centerY);
 
-      // Draw Particles moving along wire
-      setParticles((prev) =>
-        prev
-          .map((p) => {
-            const nextProgress = p.progress + 0.04;
-            const currentX =
-              p.direction === 'outbound'
-                ? startX + (endX - startX) * nextProgress
-                : endX - (endX - startX) * nextProgress;
+      // Translate & Draw Active Particles
+      particlesRef.current = particlesRef.current
+        .map((p) => {
+          const nextProgress = p.progress + 0.04;
+          const currentX =
+            p.direction === 'outbound'
+              ? startX + (endX - startX) * nextProgress
+              : endX - (endX - startX) * nextProgress;
 
-            // Draw glowing particle dot
-            ctx.beginPath();
-            ctx.arc(currentX, centerY, 6, 0, Math.PI * 2);
-            ctx.fillStyle = p.direction === 'outbound' ? '#2f5de3' : '#10b981';
-            ctx.fill();
+          // Draw particle dot
+          ctx.beginPath();
+          ctx.arc(currentX, centerY, 6, 0, Math.PI * 2);
+          ctx.fillStyle = p.direction === 'outbound' ? '#2f5de3' : '#10b981';
+          ctx.fill();
 
-            return { ...p, progress: nextProgress };
-          })
-          .filter((p) => p.progress <= 1)
-      );
+          return { ...p, progress: nextProgress };
+        })
+        .filter((p) => p.progress <= 1);
 
       animId = requestAnimationFrame(render);
     };
